@@ -1,0 +1,4 @@
+# wallstreetbets/stocks summed from monthly sub-windows; DeepSeek before wallstreetbets partial: 147+189+74 = 410 for Oct20-Jan5, Jan5-Jan20 not retrievable
+# ChatGPT immediate r/ChatGPT = 706 (Dec 2022) + 2308 (Jan-Feb 2023); sub created Dec 1 2022
+# Missing: ChatGPT long r/ChatGPT (timed out); ChatGPT long r/artificial partial: 1475 for Nov30-Jan15 only
+# DeepSeek before r/wallstreetbets partial: 410 for Oct20-Jan5 only
