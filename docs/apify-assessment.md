@@ -2,6 +2,8 @@
 
 As of 2026-11-05. Prepared for discussion with the supervisor (Yadira Lizama Mue).
 
+**Decision (Rahul, 2026-11-05):** stay Reddit-focused and add Hacker News through its free API. No paid Apify sources. Collection script: `data/scripts/collect_hn.py`.
+
 ## Summary
 
 Apify could add X (Twitter) posts and YouTube comments to the corpus for roughly **$0 to $150 in total**, depending on how much is sampled. It is a marketplace of third-party scrapers ("Actors") billed per result, not a data archive, so what it returns for 2016 and 2022 depends on each scraper and on the platform it scrapes.
