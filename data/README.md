@@ -53,3 +53,24 @@ Source: Arctic Shift API (`/api/{posts,comments}/search/aggregate`, fallback
 
 Comment keyword search failed when tried from the cloud fetcher, so its reliability
 is still unknown; the script records any API error in the `errors` column.
+
+## Reddit-wide "AI" keyword time series (added 2026-11-05)
+
+Supervisor's request (Nov 2026): search "AI" / "artificial intelligence" across Reddit and
+look for major moments from keyword and post/comment frequencies, separately from the three
+chosen events. Script: `scripts/ai_keyword_timeseries.py`. Counts only, no text.
+
+- **Not truly Reddit-wide.** Arctic Shift keyword search only works with a `subreddit`
+  filter, so the script counts hits in a list of subreddits: the N largest non-NSFW
+  subreddits by current subscribers (default 100; chosen without reference to AI), the 13
+  corpus subreddits, and any extras passed with `--add`. The `group` column in
+  `subreddits.csv` records which. Reddit-wide unfiltered totals (`global` in
+  `totals_monthly.csv`) are saved for normalisation.
+- Searches per subreddit, monthly from 2010-01: posts by title, posts by title+selftext,
+  comments by body; terms `AI` and `"artificial intelligence"`.
+- Same case-insensitivity caveat as above (rule 2): counts are upper bounds.
+- Large subreddits often time out on keyword search (comments especially). Failed months
+  are listed in `errors.csv` and are missing from the counts; missing is not zero.
+- Run on the Mac (cloud network blocks Arctic Shift):
+  `python3 ai_keyword_timeseries.py --top 100` (resumable; rerun to fill gaps).
+  Quick test: `python3 ai_keyword_timeseries.py --only-subs technology --out test_run`.
