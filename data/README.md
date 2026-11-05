@@ -68,6 +68,11 @@ second source. No paid Apify sources (see `docs/apify-assessment.md`).
   applies the plan's rule (case-sensitive whole-word `AI`, "artificial intelligence", or the
   event name); rows with an empty `match` are false hits to drop.
 - Algolia returns at most 1,000 hits per query; the script splits time ranges until each fits.
+- Searches look only at the item's own text (comment_text; story title + story_text), not the
+  parent story's title or URL. Large counts from Algolia are estimates (`exhaustive` = False in
+  `hn/counts.csv`); e.g. the first --counts run (2026-11-05) gave 517k "AI" comments for
+  DeepSeek long, out of an estimated 615k comments in total. Use counts from the downloaded CSVs.
+- Downloaded CSVs are not committed (`.gitignore`); only `hn/counts.csv` is.
 - Output: `hn/<event>_<window>.csv` (stories and comments, with story_id/parent_id for threads)
   and `hn/counts.csv`.
 - Test (2026-11-05, AlphaGo immediate window, API hits): "AI" 743 stories / 3,280 comments;

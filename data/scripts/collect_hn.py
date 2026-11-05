@@ -11,7 +11,11 @@ Algolia returns at most 1,000 hits per query, so any time range with more
 hits is split in half until each piece fits.
 
 Algolia's matching is case-insensitive, so the API results are an upper
-bound, just like Arctic Shift. Each row gets a `match` column from the plan's
+bound, just like Arctic Shift. Searches are restricted to the item's own
+text (comment_text for comments; title and story_text for stories), so a
+comment is not matched just because its story's title or URL says "AI".
+Algolia's hit counts for large ranges are estimates (`exhaustive` = False
+in counts.csv); the download splits ranges until the counts are exact. Each row gets a `match` column from the plan's
 filtering rule: case-sensitive whole-word "AI", "artificial intelligence"
 (any case), or the event name (any case). Rows with an empty `match` are
 false hits and should be dropped before analysis.
@@ -20,6 +24,7 @@ Usage (stdlib only, run from the repo root):
     python3 data/scripts/collect_hn.py --counts            # hit counts only, fast
     python3 data/scripts/collect_hn.py                     # full download
     python3 data/scripts/collect_hn.py --event AlphaGo --window immediate
+    python3 data/scripts/collect_hn.py --event DeepSeek --skip-existing   # resume
 
 Output: data/hn/<event>_<window>.csv (one row per story or comment)
 and data/hn/counts.csv.
@@ -61,8 +66,12 @@ def fetch(params, tries=4):
             time.sleep(2 ** (i + 1))
 
 
+SEARCH_IN = {"comment": "comment_text", "story": "title,story_text"}
+
+
 def params(term, tag, a, b, page=0, per_page=0):
     return {
+        "restrictSearchableAttributes": SEARCH_IN[tag],
         "query": f'"{term}"' if " " in term else term,
         "tags": tag,
         "numericFilters": f"created_at_i>={a},created_at_i<{b}",
@@ -73,8 +82,9 @@ def params(term, tag, a, b, page=0, per_page=0):
     }
 
 
-def count(term, tag, a, b):
-    return fetch(params(term, tag, a, b))["nbHits"]
+def count(term, tag, a, b, exact_flag=False):
+    res = fetch(params(term, tag, a, b))
+    return (res["nbHits"], res.get("exhaustiveNbHits")) if exact_flag else res["nbHits"]
 
 
 def collect_range(term, tag, a, b):
@@ -139,6 +149,7 @@ def main():
     ap.add_argument("--event", choices=WINDOWS)
     ap.add_argument("--window", choices=["before", "immediate", "long"])
     ap.add_argument("--out", default="data/hn")
+    ap.add_argument("--skip-existing", action="store_true", help="skip windows whose CSV already exists")
     args = ap.parse_args()
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -151,24 +162,31 @@ def main():
             if args.window and window != args.window:
                 continue
             a, b = epoch(start), epoch(end)
+            path = out / f"{event}_{window}.csv"
+            if args.skip_existing and not args.counts and path.exists():
+                print(f"{event} {window}: {path} exists, skipping", file=sys.stderr)
+                continue
             print(f"{event} {window} {start}..{end}", file=sys.stderr)
             rows = {}
             for tag in ("story", "comment"):
                 for term in terms_for(event, window):
-                    n = count(term, tag, a, b)
+                    n, exact = count(term, tag, a, b, exact_flag=True)
                     counts.append({"event": event, "window": window, "start": start, "end_exclusive": end,
-                                   "type": tag, "term": term, "api_hits": n})
-                    print(f"  {tag:7} {term!r}: {n}", file=sys.stderr)
+                                   "type": tag, "term": term, "api_hits": n, "exhaustive": exact})
+                    print(f"  {tag:7} {term!r}: {n}{'' if exact else ' (estimate)'}", file=sys.stderr)
                     if args.counts:
                         continue
+                    got = 0
                     for hit in collect_range(term, tag, a, b):
+                        got += 1
+                        if got % 5000 == 0:
+                            print(f"    ... {got} downloaded", file=sys.stderr)
                         r = rows.get(hit["objectID"])
                         if r:  # same item found by another term
                             r["terms_queried"] = ";".join(sorted(set(r["terms_queried"].split(";")) | {term}))
                         else:
                             rows[hit["objectID"]] = row(hit, [term], event, window)
             if not args.counts:
-                path = out / f"{event}_{window}.csv"
                 with path.open("w", newline="", encoding="utf-8") as f:
                     w = csv.DictWriter(f, fieldnames=FIELDS)
                     w.writeheader()
@@ -176,8 +194,10 @@ def main():
                 kept = sum(1 for r in rows.values() if r["match"])
                 print(f"  wrote {len(rows)} items ({kept} pass the filter) to {path}", file=sys.stderr)
 
+    if not args.counts:
+        return  # keep the counts.csv from the --counts run
     with (out / "counts.csv").open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["event", "window", "start", "end_exclusive", "type", "term", "api_hits"])
+        w = csv.DictWriter(f, fieldnames=["event", "window", "start", "end_exclusive", "type", "term", "api_hits", "exhaustive"])
         w.writeheader()
         w.writerows(counts)
 

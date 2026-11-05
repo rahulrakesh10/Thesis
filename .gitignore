@@ -1,0 +1,2 @@
+data/hn/*.csv
+!data/hn/counts.csv
