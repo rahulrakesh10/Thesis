@@ -9,3 +9,4 @@ CS 4490Z thesis project comparing Reddit discussion before, immediately after, a
 - [data/ai-use-log.md](data/ai-use-log.md): log of generative-AI use, as the course requires
 - [planning/event-corpus-plan.md](planning/event-corpus-plan.md): subreddits, time windows, keywords and confounds
 - `data/scripts/`: counting scripts for the Arctic Shift Reddit archive
+- `data/scripts/explore/`: corpus exploration tables (temporal counts, term frequencies and n-grams, Gephi network edge lists); see data/README.md

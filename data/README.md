@@ -53,3 +53,51 @@ Source: Arctic Shift API (`/api/{posts,comments}/search/aggregate`, fallback
 
 Comment keyword search failed when tried from the cloud fetcher, so its reliability
 is still unknown; the script records any API error in the `errors` column.
+
+## Corpus exploration scripts (added 2026-11-05)
+
+Supervisor's request (Nov 2026): start exploring the corpus already built: temporal
+patterns, language and possible networks. `scripts/explore/` produces descriptive tables
+only (counts, frequencies, edge lists). They contain no interpretation; reading them is
+Rahul's work. Standard library only (Python 3.8+), run from `data/scripts/explore/`.
+
+| Script | Needs | Writes |
+|---|---|---|
+| `explore_temporal.py` | posts CSVs (`sample_<Event>.csv`); optional comments | daily / weekly posts, comments, score and `num_comments` per event x window x subreddit, `days_from_event`, `window_summary.csv` |
+| `explore_language.py` | same | corpus size, unigram / bigram / trigram frequencies (count, document frequency, per 10k tokens), keyword-in-context lines for `AI` and "artificial intelligence" |
+| `explore_networks.py` | same; reply and user networks need comments | Gephi CSVs (nodes + edges) per event x window: term co-occurrence, subreddit-domain, reply (author -> author), user-subreddit |
+| `fetch_comments.py` | network access to Arctic Shift (Mac) | `comments.csv` and `posts_with_authors.csv` for the posts in the corpus |
+
+Run on the samples (writes to `./exploration/`, ignored by git):
+
+```
+cd data/scripts/explore
+python3 explore_temporal.py ~/thesis-data/sample/sample_*.csv
+python3 explore_language.py ~/thesis-data/sample/sample_*.csv
+python3 explore_networks.py ~/thesis-data/sample/sample_*.csv
+```
+
+With comments (the samples have no comments and no authors, so reply and user networks
+need this step first; it runs on the Mac because the cloud network blocks Arctic Shift):
+
+```
+python3 fetch_comments.py ~/thesis-data/sample/sample_*.csv --out ~/thesis-data/comments
+python3 explore_temporal.py ~/thesis-data/sample/sample_*.csv --comments ~/thesis-data/comments/comments.csv
+python3 explore_language.py ~/thesis-data/sample/sample_*.csv --comments ~/thesis-data/comments/comments.csv
+python3 explore_networks.py ~/thesis-data/sample/sample_*.csv ~/thesis-data/comments/posts_with_authors.csv \
+    --comments ~/thesis-data/comments/comments.csv
+```
+
+Choices to check before using any table in the thesis (log changes here):
+
+5. Text = title + selftext for posts, body for comments; `[removed]` / `[deleted]` and URLs dropped.
+6. Tokens are lowercased, so the language tables merge "AI" and "ai"; the keyword-in-context
+   file keeps the case-sensitive `\bAI\b` match. Stopwords: `scripts/explore/stopwords.txt`,
+   the same list for every event (`--keep-stopwords` turns it off).
+7. Comments are grouped under the window of their post, but dated by their own timestamp,
+   so some comment dates fall after the window ends.
+8. Networks: deleted authors and AutoModerator are dropped; term co-occurrence uses the 100
+   most frequent terms per event x window and drops pairs seen in fewer than 2 documents;
+   reddit / imgur hosts are left out of the subreddit-domain network.
+9. The sample outputs were run on samples of 207 / 240 / 210 posts (AlphaGo / ChatGPT /
+   DeepSeek, r/technology and r/singularity only), so they show the format, not the corpus.
