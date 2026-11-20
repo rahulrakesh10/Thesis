@@ -1,3 +1,6 @@
 data/hn/*.csv
 !data/hn/counts.csv
 __pycache__/
+*.pyc
+data/scripts/explore/exploration/
+comments/
