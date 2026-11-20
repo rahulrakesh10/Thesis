@@ -74,3 +74,27 @@ chosen events. Script: `scripts/ai_keyword_timeseries.py`. Counts only, no text.
 - Run on the Mac (cloud network blocks Arctic Shift):
   `python3 ai_keyword_timeseries.py --top 100` (resumable; rerun to fill gaps).
   Quick test: `python3 ai_keyword_timeseries.py --only-subs technology --out test_run`.
+
+## Hacker News (added 2026-11-05)
+
+Decision (Rahul, 2026-11-05): the corpus stays Reddit-focused, plus Hacker News as a free
+second source. No paid Apify sources (see `docs/apify-assessment.md`).
+
+- Script: `scripts/collect_hn.py` (stdlib only). Source: the free HN Algolia search API.
+  The cloud environment blocks hn.algolia.com, so run it on the Mac from the repo root:
+  `python3 data/scripts/collect_hn.py --counts` first, then `python3 data/scripts/collect_hn.py`.
+- Same windows as the Reddit corpus. Same terms: "AI" and "artificial intelligence" in all
+  windows, plus the event name (AlphaGo, ChatGPT, DeepSeek) in the after windows.
+- Algolia matching is case-insensitive, so API hits are an upper bound. The `match` column
+  applies the plan's rule (case-sensitive whole-word `AI`, "artificial intelligence", or the
+  event name); rows with an empty `match` are false hits to drop.
+- Algolia returns at most 1,000 hits per query; the script splits time ranges until each fits.
+- Searches look only at the item's own text (comment_text; story title + story_text), not the
+  parent story's title or URL. Large counts from Algolia are estimates (`exhaustive` = False in
+  `hn/counts.csv`); e.g. the first --counts run (2026-11-05) gave 517k "AI" comments for
+  DeepSeek long, out of an estimated 615k comments in total. Use counts from the downloaded CSVs.
+- Downloaded CSVs are not committed (`.gitignore`); only `hn/counts.csv` is.
+- Output: `hn/<event>_<window>.csv` (stories and comments, with story_id/parent_id for threads)
+  and `hn/counts.csv`.
+- Test (2026-11-05, AlphaGo immediate window, API hits): "AI" 743 stories / 3,280 comments;
+  "artificial intelligence" 166 comments; "AlphaGo" 132 stories / 1,028 comments.
