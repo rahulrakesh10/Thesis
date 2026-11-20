@@ -113,7 +113,8 @@ Rahul's work. Standard library only (Python 3.8+), run from `data/scripts/explor
 | `explore_networks.py` | same; reply and user networks need comments | Gephi CSVs (nodes + edges) per event x window: term co-occurrence, subreddit-domain, reply (author -> author), user-subreddit |
 | `fetch_comments.py` | network access to Arctic Shift (Mac) | `comments.csv` and `posts_with_authors.csv` for the posts in the corpus |
 
-Run on the samples (writes to `./exploration/`, ignored by git):
+Run on the samples (writes to `./exploration/`, ignored by git; the 2026-11-05 sample-run
+output is kept in `data/exploration/`, with a descriptive `SUMMARY.md`):
 
 ```
 cd data/scripts/explore
